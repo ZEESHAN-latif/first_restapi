@@ -26,7 +26,7 @@ app.use(cors());
 app.use('/api', require('./routes/route').router);
 app.use('/api', require('./routes/userRoutes').router);
 
-app.listen(process.env.PORT, process.env.hostnameLocal,  () => {
+app.listen(process.env.PORT || 5000,  () => {
     console.log(`Server Started at http://${process.env.hostnameLocal}:${process.env.PORT}`)
 })
 
