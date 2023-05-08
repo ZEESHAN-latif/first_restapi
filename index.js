@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const mongoString = process.env.DATABASE_URL;
 const router = express.Router()
-const allowedOrigins = ['https://firstrestapi-production.up.railway.app:6184', 'http://localhost:5000'];
 
 mongoose.connect(mongoString);
 const database = mongoose.connection;
@@ -21,20 +20,8 @@ app.use(express.json());
 app.use(cors());
 
 // app.use(cors({
-//   origin: 'https://firstrestapi-production.up.railway.app:6184'
+//   origin: 'http://localhost:3001'
 // }));
-
-app.use(
-    cors({
-      origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
-      },
-    })
-  );
 
 app.use('/api', require('./routes/route').router);
 app.use('/api', require('./routes/userRoutes').router);
