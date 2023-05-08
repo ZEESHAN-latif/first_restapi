@@ -19,15 +19,15 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// app.use(cors({
-//   origin: 'http://localhost:3001'
-// }));
+app.use(cors({
+  origin: 'https://firstrestapi-production.up.railway.app:6184'
+}));
 
 app.use('/api', require('./routes/route').router);
 app.use('/api', require('./routes/userRoutes').router);
 
 app.listen(process.env.PORT || 5000,  () => {
-    console.log(`Server Started at http://${process.env.hostnameLocal}:${process.env.PORT}`)
+    console.log(`Server Started at http://${process.env.PORT}`)
 })
 
 // app.listen(process.env.PORT, () => {
