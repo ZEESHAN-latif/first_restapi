@@ -23,7 +23,6 @@ app.use(express.json());
 //Login User API
 
 router.post("/login", logRequests, async (req, res) => {
-  console.log(req.body)
   const { email, password } = req.body;
   try {
     const user = await Model.findOne({ email });
@@ -37,12 +36,11 @@ router.post("/login", logRequests, async (req, res) => {
         }
       });
     if (user && isPasswordMatch) {
-      res.json({ token });
+      res.send({ token: token });
     } else {
       res.status(401).json({ message: "Invalid credentials" });
     }
   } catch (error) {
-    console.log("error", error)
     res.status(500).json({ message: "Internal server error" });
   }
 });
