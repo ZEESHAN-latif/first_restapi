@@ -36,9 +36,8 @@ router.post("/login", logRequests, async (req, res) => {
           console.log('Signed JWT:', token);
         }
       });
-  console.log(user,'isPasswordMatch', isPasswordMatch )
     if (user && isPasswordMatch) {
-      res.status(200).json({ token });
+      res.json({ token });
     } else {
       res.status(401).json({ message: "Invalid credentials" });
     }
