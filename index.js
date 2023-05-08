@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const mongoString = process.env.DATABASE_URL;
 const router = express.Router()
-const allowedOrigins = ['https://firstrestapi-production.up.railway.app', 'http://localhost:5000'];
+const allowedOrigins = ['https://firstrestapi-production.up.railway.app:6184', 'http://localhost:5000'];
 
 mongoose.connect(mongoString);
 const database = mongoose.connection;
