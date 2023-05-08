@@ -26,6 +26,20 @@ app.use(cors());
 app.use('/api', require('./routes/route').router);
 app.use('/api', require('./routes/userRoutes').router);
 
+app.use(function (err, req, res, next) {
+    // set locals, only providing error in development
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
+  
+    // render the error page
+    console.error(err);
+    res.status(err.status || 500);
+    res.render('error', {
+      message: err.message,
+      error: err
+    });
+  });
+  
 app.listen(process.env.PORT || 5000,  () => {
     console.log(`Server Started at http://${process.env.PORT}`)
 })
