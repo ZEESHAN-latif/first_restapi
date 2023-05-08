@@ -23,6 +23,7 @@ app.use(express.json());
 //Login User API
 
 router.post("/login", logRequests, async (req, res) => {
+  console.log(req)
   const { email, password } = req.body;
   try {
     const user = await Model.findOne({ email });
@@ -32,7 +33,7 @@ router.post("/login", logRequests, async (req, res) => {
       const token = jwt.sign({ name: user.name, id: user._id }, secretKey, {
         expiresIn: "1h",
       });
-      res.json({ token });
+      res.status(200).json({ token });
     } else {
       res.status(401).json({ message: "Invalid credentials" });
     }
