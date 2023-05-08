@@ -23,16 +23,15 @@ app.use(express.json());
 //Login User API
 
 router.post("/login", logRequests, async (req, res) => {
-  console.log(req)
+  console.log(req.body)
   const { email, password } = req.body;
   try {
     const user = await Model.findOne({ email });
     const isPasswordMatch = await bcrypt.compare(password, user.password);
-    if (user && isPasswordMatch) {
       // Generate a token and send it back to the client
-      const token = jwt.sign({ name: user.name, id: user._id }, secretKey, {
-        expiresIn: "1h",
-      });
+      const token = jwt.sign({ name: user.name, id: user._id }, secretKey, {expiresIn: "1h"});
+  console.log(user,'isPasswordMatch', isPasswordMatch )
+    if (user && isPasswordMatch) {
       res.status(200).json({ token });
     } else {
       res.status(401).json({ message: "Invalid credentials" });
