@@ -28,13 +28,7 @@ router.post("/login", logRequests, async (req, res) => {
     const user = await Model.findOne({ email });
     const isPasswordMatch = await bcrypt.compare(password, user.password);
       // Generate a token and send it back to the client
-      const token = jwt.sign({ name: user.name, id: user._id }, `${secretKey}`, {expiresIn: "1h"}, (error, token) => {
-        if (error) {
-          console.error('Error signing JWT:', error);
-        } else {
-          console.log('Signed JWT:', token);
-        }
-      });
+      const token = jwt.sign({ name: user.name, id: user._id }, `${secretKey}`, {expiresIn: "1h"});
     if (user && isPasswordMatch) {
       res.send({ token: token });
     } else {
