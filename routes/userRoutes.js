@@ -29,7 +29,13 @@ router.post("/login", logRequests, async (req, res) => {
     const user = await Model.findOne({ email });
     const isPasswordMatch = await bcrypt.compare(password, user.password);
       // Generate a token and send it back to the client
-      const token = jwt.sign({ name: user.name, id: user._id }, secretKey, {expiresIn: "1h"});
+      const token = jwt.sign({ name: user.name, id: user._id }, `${secretKey}`, {expiresIn: "1h"}, (error, token) => {
+        if (error) {
+          console.error('Error signing JWT:', error);
+        } else {
+          console.log('Signed JWT:', token);
+        }
+      });
   console.log(user,'isPasswordMatch', isPasswordMatch )
     if (user && isPasswordMatch) {
       res.status(200).json({ token });
@@ -74,7 +80,7 @@ router.get("/getAllUsers", async (req, res) => {
     return res.status(401).json({ message: "Missing token" });
   }
   try {
-    const decoded = jwt.verify(token, secretKey);
+    const decoded = jwt.verify(token, `${secretKey}`);
     const username = decoded.name;
     if (username) {
       const data = await Model.find();
@@ -93,7 +99,7 @@ router.put("/updateUser/:id", async (req, res) => {
     return res.status(401).json({ message: "Missing token" });
   }
   try {
-    const decoded = jwt.verify(token, secretKey);
+    const decoded = jwt.verify(token, `${secretKey}`);
     const username = decoded.name;
     const id = req.params.id;
     const updatedData = req.body;
