@@ -1,6 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const Model = require("../model/user");
+
 require("dotenv").config();
 const app = express();
 const router = express.Router();
@@ -12,9 +13,25 @@ const salt = bcrypt.genSaltSync(saltRounds);
 const secretKey = process.env.secretKey;
 
 // Middleware function to log requests
-const logRequests = (req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  next();
+const authMiddelware = (req, res, next) => {
+  // Get the token from the Authorization header
+  try {
+    const token = req.headers.authorization.split(" ")[1]; // Authorization: 'Bearer TOKEN'
+    if (!token) {
+      throw new Error("Authentication failed!");
+    }
+    jwt.verify(token, `${secretKey}`, function (err, decoded) {
+      if (err) {
+        return res.json(err);
+      } else {
+        req.decoded = decoded;
+        req.authenticated = true;
+        next();
+      }
+    });
+  } catch (err) {
+    res.status(400).send("Invalid token !");
+  }
 };
 
 // Middleware function to parse request body
@@ -22,17 +39,24 @@ app.use(express.json());
 
 //Login User API
 
-router.post("/login", logRequests, async (req, res) => {
+router.post("/login", async (req, res) => {
   const { email, password } = req.body;
+  if (!email || !password) {
+    return res.json({ message: "Payload must be matched" });
+  }
   try {
     const user = await Model.findOne({ email });
+
     const isPasswordMatch = await bcrypt.compare(password, user.password);
-      // Generate a token and send it back to the client
-      const token = jwt.sign({ name: user.name, id: user._id }, `${secretKey}`, {expiresIn: "1h"});
+    // Generate a token and send it back to the client
+    const token = jwt.sign({ name: user.name, id: user._id }, `${secretKey}`, {
+      expiresIn: "1h",
+    });
+    app.set("secret", secretKey);
     if (user && isPasswordMatch) {
-      res.send({ token: token });
+      return res.json({ token: token });
     } else {
-      res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -51,11 +75,17 @@ router.post("/register", async (req, res) => {
   });
 
   try {
-    if(req.body.name && req.body.address && req.body.password && req.body.email && req.body.contact){
+    if (
+      req.body.name &&
+      req.body.address &&
+      req.body.password &&
+      req.body.email &&
+      req.body.contact
+    ) {
       const dataToSave = await data.save();
-      res.json([{message:"User register successfully", success:true}])
-    }else{
-      res.send({message: "Please provide all data"})
+      res.json([{ message: "User register successfully", success: true }]);
+    } else {
+      res.send({ message: "Please provide all data" });
     }
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -63,20 +93,10 @@ router.post("/register", async (req, res) => {
 });
 
 //Get all Users
-router.get("/getAllUsers", async (req, res) => {
-  // Get the token from the Authorization header
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({ message: "Missing token" });
-  }
+router.get("/getAllUsers", authMiddelware, async (req, res) => {
   try {
-    const decoded = jwt.verify(token, `${secretKey}`);
-    const username = decoded.name;
-    if (username) {
-      const data = await Model.find();
-      res.json(data);
-    }
+    const data = await Model.find();
+    res.json(data);
   } catch (error) {
     res.json({ message: error });
   }
