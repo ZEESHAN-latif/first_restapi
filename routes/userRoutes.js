@@ -54,10 +54,9 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign({ name: user.name, id: user._id }, `${secretKey}`, {
       expiresIn: "1h",
     });
-    console.log("isPasswordMatch", isPasswordMatch);
     app.set("secret", secretKey);
     if (user.email && isPasswordMatch) {
-      return res.json({ token: token });
+      return res.json({token: token, email : user.email, name:user.name});
     } else {
       return res.json({ message: "Invalid credentials" });
     }
