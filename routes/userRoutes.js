@@ -41,22 +41,24 @@ app.use(express.json());
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
+  const user = await Model.findOne({ email });
   if (!email || !password) {
     return res.json({ message: "Payload must be matched" });
   }
+  if (!user) {
+    return res.json({ message: "email is invalid" });
+  }
   try {
-    const user = await Model.findOne({ email });
-
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     // Generate a token and send it back to the client
     const token = jwt.sign({ name: user.name, id: user._id }, `${secretKey}`, {
       expiresIn: "1h",
     });
     app.set("secret", secretKey);
-    if (user && isPasswordMatch) {
-      return res.json({ token: token });
+    if (user.email && isPasswordMatch) {
+      return res.json({token: token, email : user.email, name:user.name});
     } else {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.json({ message: "Invalid credentials" });
     }
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
