@@ -1,6 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const Model = require("../model/user");
+const mongoose = require('mongoose');
 
 require("dotenv").config();
 const app = express();
@@ -13,16 +14,16 @@ const salt = bcrypt.genSaltSync(saltRounds);
 const secretKey = process.env.secretKey;
 
 // Middleware function to log requests
-const authMiddelware = (req, res, next) => {
+const authMiddleware = (req, res, next) => {
   // Get the token from the Authorization header
   try {
-    const token = req.headers.authorization.split(" ")[1]; // Authorization: 'Bearer TOKEN'
+    const token = req.headers.authorization.split(" ")[2]; // Authorization: 'Bearer TOKEN'
     if (!token) {
       throw new Error("Authentication failed!");
     }
     jwt.verify(token, `${secretKey}`, function (err, decoded) {
       if (err) {
-        return res.json(err);
+        return res.json({error:err});
       } else {
         req.decoded = decoded;
         req.authenticated = true;
@@ -43,10 +44,10 @@ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const user = await Model.findOne({ email });
   if (!email || !password) {
-    return res.json({ message: "Payload must be matched" });
+    return res.status(404).json({ message: "Credentials not be found" });
   }
   if (!user) {
-    return res.json({ message: "email is invalid" });
+    return res.status(404).json({ message: "email is invalid" });
   }
   try {
     const isPasswordMatch = await bcrypt.compare(password, user.password);
@@ -56,9 +57,9 @@ router.post("/login", async (req, res) => {
     });
     app.set("secret", secretKey);
     if (user.email && isPasswordMatch) {
-      return res.json({token: token, email : user.email, name:user.name});
+      return res.json({id:user._id,email : user.email, name:user.name, token: token});
     } else {
-      return res.json({ message: "Invalid credentials" });
+      return res.status(404).json({ message: "Invalid credentials" });
     }
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -87,7 +88,7 @@ router.post("/register", async (req, res) => {
       const dataToSave = await data.save();
       res.json([{ message: "User register successfully", success: true }]);
     } else {
-      res.send({ message: "Please provide all data" });
+      res.status(404).json({ message: "Please provide all data" })
     }
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -95,43 +96,46 @@ router.post("/register", async (req, res) => {
 });
 
 //Get all Users
-router.get("/getAllUsers", authMiddelware, async (req, res) => {
+router.get("/getAllUsers", authMiddleware, async (req, res) => {
   try {
     const data = await Model.find();
-    res.json(data);
+    res.status(200).json({results:data, success:true});
   } catch (error) {
-    res.json({ message: error });
+    res.status(400).json({ message: error });
   }
 });
 
-//Update User
-router.put("/updateUser/:id", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({ message: "Missing token" });
-  }
+// Update User
+router.put("/updateUser/:id", authMiddleware, async (req, res) => {
   try {
-    const decoded = jwt.verify(token, `${secretKey}`);
-    const username = decoded.name;
-    const id = req.params.id;
+    const { id } = req.params;
     const updatedData = req.body;
     const options = { new: true };
-    if (username) {
-      const result = await Model.findByIdAndUpdate(id, updatedData, options);
-      res.send(result);
-    }
+    const result = await Model.findByIdAndUpdate(id, updatedData, options);
+    res.status(200).send(result);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
 
-//Delete specific user Method
-router.delete("/deleteUser/:id", async (req, res) => {
+// Delete specific user method
+router.delete("/deleteUser/:id", authMiddleware, async (req, res) => {
   try {
-    const id = req.params.id;
-    const data = await Model.findByIdAndDelete(id);
-    res.send(`User with name ${data.name} has been deleted..`);
+    const userId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      // Invalid user ID format
+      return res.status(404).send({ message: 'Invalid user ID' });
+    }
+
+    const user = await Model.findById(userId);
+    if (user) {
+      // User found, perform deletion
+      const deletedUser = await Model.findByIdAndDelete(userId);
+      return res.status(200).send({ message: `User with name ${deletedUser.name} has been deleted.` });
+    } else {
+      // User not found
+      return res.status(404).send({ message: 'User not found' });
+    }
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -142,21 +146,21 @@ router.post("/resetPassword", async (req, res) => {
   try {
     const email = req.body.email;
     const verifyUser = await Model.findOne({ email });
-    if (verifyUser.password === req.body.password) {
-      res.send({ message: "Try another password" });
+    if (verifyUser?.password === req.body.password) {
+      res.status(404).send({ message: "Try another password" });
     }
-    if (verifyUser.password !== req.body.password && verifyUser) {
+    if (verifyUser) {
       const updatedData = req.body;
-      const userId = req.body._id;
+      const userId = req?.body._id;
       const options = { new: true };
-      const result = await Model.findByIdAndUpdate(
+       await Model.findByIdAndUpdate(
         userId,
         updatedData,
         options
       );
-      res.send({ message: "Your password successfull updated" });
+      res.status(200).send({ message: "Your password successful updated", success:true });
     } else {
-      res.send({ message: "User not Exist" });
+      res.status(404).send({ message: "User not Exist" });
     }
   } catch (error) {
     res.status(400).json({ message: error.message });

@@ -28,6 +28,11 @@ app.options('*',cors())
 app.use('/api', require('./routes/route').router);
 app.use('/api', require('./routes/userRoutes').router);
 
+// Add a catch-all route for API not found
+app.use((req, res) => {
+    res.status(404).json({ message: "API not found" });
+  });
+
 app.listen(process.env.PORT || 5000,  () => {
     console.log(`Server Started at http://${process.env.PORT}`)
 })
